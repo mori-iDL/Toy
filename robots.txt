@@ -1,0 +1,3 @@
+# 検索エンジンのクローラーをブロック
+User-agent: *
+Disallow: /
