@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手描きパターンデザイナー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas2svg/1.0.19/canvas2svg.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #7f8c8d;
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .canvas-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .pattern-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pattern-btn {
+            padding: 12px 8px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .pattern-btn:hover {
+            border-color: #3498db;
+            background: #f8fafc;
+        }
+
+        .pattern-btn.active {
+            border-color: #2c3e50;
+            background: #2c3e50;
+            color: white;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .control-label span {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .control-value {
+            font-size: 0.85rem;
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #ecf0f1;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #2c3e50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #d5dbdb;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .info-text {
+            font-size: 0.8rem;
+            color: #95a5a6;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+
+        .seed-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .seed-input-group label {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .seed-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .seed-input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+        }
+
+        .seed-input-group button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #666;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .seed-input-group button:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .preset-btn.active {
+            border-color: #2c3e50;
+            background: #2c3e50;
+            color: white;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .pattern-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .canvas-section,
+            .control-panel {
+                padding: 15px;
+            }
+
+            .seed-input-group {
+                flex-wrap: wrap;
+            }
+
+            .seed-input-group input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>手描きパターンデザイナー</h1>
+            <p class="subtitle">Parametric Hand-drawn Pattern Generator</p>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-section">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="800" height="800"></canvas>
+                </div>
+
+                <div class="pattern-selector">
+                    <button class="pattern-btn active" data-pattern="0">1. 縦波線</button>
+                    <button class="pattern-btn" data-pattern="1">2. カンマ散布</button>
+                    <button class="pattern-btn" data-pattern="2">3. 手描き円</button>
+                    <button class="pattern-btn" data-pattern="3">4. リング散布</button>
+                    <button class="pattern-btn" data-pattern="4">5. スターバースト</button>
+                    <button class="pattern-btn" data-pattern="5">6. 重なる四角</button>
+                    <button class="pattern-btn" data-pattern="6">7. 白樺ダッシュ</button>
+                    <button class="pattern-btn" data-pattern="7">8. スクリブル</button>
+                    <button class="pattern-btn" data-pattern="8">9. 横波線</button>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <h2 class="panel-title">パラメーター調整</h2>
+
+                <div class="seed-input-group">
+                    <label>シード:</label>
+                    <input type="number" id="seedInput" value="42857" min="0" max="99999">
+                    <button id="applySeed">適用</button>
+                    <button id="copySeed">コピー</button>
+                </div>
+
+                <div class="preset-buttons">
+                    <button class="preset-btn active" data-preset="standard">スタンダード</button>
+                    <button class="preset-btn" data-preset="organic">有機的</button>
+                    <button class="preset-btn" data-preset="bold">太め</button>
+                    <button class="preset-btn" data-preset="dense">高密度</button>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>有機的な揺らぎ</span>
+                        <span class="control-value" id="organicValue">50%</span>
+                    </div>
+                    <input type="range" id="organic" min="0" max="100" value="50">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>線の太さ</span>
+                        <span class="control-value" id="strokeWidthValue">100%</span>
+                    </div>
+                    <input type="range" id="strokeWidth" min="50" max="200" value="100">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>密度</span>
+                        <span class="control-value" id="densityValue">100%</span>
+                    </div>
+                    <input type="range" id="density" min="50" max="200" value="100">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>スケール</span>
+                        <span class="control-value" id="scaleValue">100%</span>
+                    </div>
+                    <input type="range" id="scale" min="50" max="150" value="100">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>回転</span>
+                        <span class="control-value" id="rotationValue">0°</span>
+                    </div>
+                    <input type="range" id="rotation" min="0" max="360" value="0">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="regenerate">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        新しいパターン生成
+                    </button>
+                    <button class="btn btn-secondary" id="reset">
+                        デフォルトに戻す
+                    </button>
+                    <button class="btn btn-download" id="downloadSVG">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        SVGダウンロード
+                    </button>
+                    <button class="btn btn-secondary" id="downloadPNG">
+                        PNGダウンロード
+                    </button>
+                </div>
+
+                <p class="info-text">
+                    各パターンはプロのイラストレーターによる手描きデザインを忠実に再現しています。
+                    スライダーでパラメトリックに変化させることができます。
+                    気に入ったパターンはシード値をコピーして保存できます。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Seeded Random Number Generator
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+                this.m = 0x80000000;
+                this.a = 1103515245;
+                this.c = 12345;
+                this.state = seed;
+            }
+
+            next() {
+                this.state = (this.a * this.state + this.c) % this.m;
+                return this.state / this.m;
+            }
+
+            range(min, max) {
+                return min + this.next() * (max - min);
+            }
+
+            gaussian(mean = 0, std = 1) {
+                const u1 = this.next();
+                const u2 = this.next();
+                const z = Math.sqrt(-2 * Math.log(u1 || 0.0001)) * Math.cos(2 * Math.PI * u2);
+                return mean + z * std;
+            }
+        }
+
+        // Perlin Noise implementation
+        class PerlinNoise {
+            constructor(seed = 0) {
+                this.rng = new SeededRandom(seed);
+                this.permutation = this.generatePermutation();
+            }
+
+            generatePermutation() {
+                const p = [];
+                for (let i = 0; i < 256; i++) p.push(i);
+                for (let i = 255; i > 0; i--) {
+                    const j = Math.floor(this.rng.next() * (i + 1));
+                    [p[i], p[j]] = [p[j], p[i]];
+                }
+                return [...p, ...p];
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(a, b, t) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 3;
+                const u = h < 2 ? x : y;
+                const v = h < 2 ? y : x;
+                return ((h & 1) ? -u : u) + ((h & 2) ? -2 * v : 2 * v);
+            }
+
+            noise(x, y) {
+                const X = Math.floor(x) & 255;
+                const Y = Math.floor(y) & 255;
+                x -= Math.floor(x);
+                y -= Math.floor(y);
+                const u = this.fade(x);
+                const v = this.fade(y);
+                const A = this.permutation[X] + Y;
+                const B = this.permutation[X + 1] + Y;
+                return this.lerp(
+                    this.lerp(this.grad(this.permutation[A], x, y), this.grad(this.permutation[B], x - 1, y), u),
+                    this.lerp(this.grad(this.permutation[A + 1], x, y - 1), this.grad(this.permutation[B + 1], x - 1, y - 1), u),
+                    v
+                );
+            }
+
+            octave(x, y, octaves = 4, persistence = 0.5) {
+                let total = 0;
+                let frequency = 1;
+                let amplitude = 1;
+                let maxValue = 0;
+                for (let i = 0; i < octaves; i++) {
+                    total += this.noise(x * frequency, y * frequency) * amplitude;
+                    maxValue += amplitude;
+                    amplitude *= persistence;
+                    frequency *= 2;
+                }
+                return total / maxValue;
+            }
+        }
+
+        // Main Application
+        class PatternDesigner {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.currentPattern = 0;
+
+                this.standardSeed = 42857;
+                this.seed = this.standardSeed;
+                this.rng = new SeededRandom(this.seed);
+                this.perlin = new PerlinNoise(this.seed);
+
+                this.defaultParams = {
+                    organic: 50,
+                    strokeWidth: 100,
+                    density: 100,
+                    scale: 100,
+                    rotation: 0
+                };
+
+                this.params = { ...this.defaultParams };
+
+                this.presets = {
+                    standard: { organic: 50, strokeWidth: 100, density: 100, scale: 100, rotation: 0 },
+                    organic: { organic: 85, strokeWidth: 100, density: 100, scale: 100, rotation: 0 },
+                    bold: { organic: 50, strokeWidth: 150, density: 100, scale: 100, rotation: 0 },
+                    dense: { organic: 50, strokeWidth: 90, density: 150, scale: 100, rotation: 0 }
+                };
+
+                this.setupEventListeners();
+                this.updateSeedDisplay();
+                this.updateAllDisplays();
+                this.draw();
+            }
+
+            setupEventListeners() {
+                // Pattern selection
+                document.querySelectorAll('.pattern-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentPattern = parseInt(btn.dataset.pattern);
+                        this.draw();
+                    });
+                });
+
+                // Preset buttons
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        const preset = btn.dataset.preset;
+                        if (this.presets[preset]) {
+                            this.params = { ...this.presets[preset] };
+                            this.updateAllDisplays();
+                            this.draw();
+                        }
+                    });
+                });
+
+                // Sliders
+                const sliders = ['organic', 'strokeWidth', 'density', 'scale', 'rotation'];
+                sliders.forEach(id => {
+                    const slider = document.getElementById(id);
+                    if (slider) {
+                        slider.addEventListener('input', (e) => {
+                            this.params[id] = parseFloat(e.target.value);
+                            this.updateValueDisplay(id);
+                            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                            this.draw();
+                        });
+                    }
+                });
+
+                // Seed input - Enter key
+                document.getElementById('seedInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.applySeed();
+                    }
+                });
+
+                // Apply seed button
+                document.getElementById('applySeed').addEventListener('click', () => {
+                    this.applySeed();
+                });
+
+                // Copy seed button
+                document.getElementById('copySeed').addEventListener('click', () => {
+                    const seedInput = document.getElementById('seedInput');
+                    seedInput.select();
+                    navigator.clipboard.writeText(seedInput.value).then(() => {
+                        const btn = document.getElementById('copySeed');
+                        const originalText = btn.textContent;
+                        btn.textContent = 'コピー完了!';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                        }, 1500);
+                    }).catch(() => {
+                        // Fallback for older browsers
+                        document.execCommand('copy');
+                    });
+                });
+
+                // Regenerate button
+                document.getElementById('regenerate').addEventListener('click', () => {
+                    this.seed = Math.floor(Math.random() * 100000);
+                    this.rng = new SeededRandom(this.seed);
+                    this.perlin = new PerlinNoise(this.seed);
+                    this.updateSeedDisplay();
+                    this.draw();
+                });
+
+                // Reset button
+                document.getElementById('reset').addEventListener('click', () => {
+                    this.seed = this.standardSeed;
+                    this.params = { ...this.defaultParams };
+                    this.rng = new SeededRandom(this.seed);
+                    this.perlin = new PerlinNoise(this.seed);
+                    this.updateAllDisplays();
+                    this.updateSeedDisplay();
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelector('.preset-btn[data-preset="standard"]').classList.add('active');
+                    this.draw();
+                });
+
+                // Download buttons
+                document.getElementById('downloadSVG').addEventListener('click', () => this.downloadSVG());
+                document.getElementById('downloadPNG').addEventListener('click', () => this.downloadPNG());
+            }
+
+            applySeed() {
+                const seedInput = document.getElementById('seedInput');
+                const newSeed = parseInt(seedInput.value);
+                if (!isNaN(newSeed) && newSeed >= 0 && newSeed <= 99999) {
+                    this.seed = newSeed;
+                    this.rng = new SeededRandom(this.seed);
+                    this.perlin = new PerlinNoise(this.seed);
+                    this.draw();
+                } else {
+                    alert('シード値は0〜99999の整数を入力してください。');
+                    seedInput.value = this.seed;
+                }
+            }
+
+            updateValueDisplay(id) {
+                const valueSpan = document.getElementById(id + 'Value');
+                if (valueSpan) {
+                    if (id === 'rotation') {
+                        valueSpan.textContent = this.params[id] + '°';
+                    } else {
+                        valueSpan.textContent = this.params[id] + '%';
+                    }
+                }
+            }
+
+            updateAllDisplays() {
+                Object.keys(this.params).forEach(id => {
+                    const slider = document.getElementById(id);
+                    if (slider) {
+                        slider.value = this.params[id];
+                        this.updateValueDisplay(id);
+                    }
+                });
+            }
+
+            updateSeedDisplay() {
+                document.getElementById('seedInput').value = this.seed;
+            }
+
+            draw() {
+                this.rng = new SeededRandom(this.seed);
+                this.perlin = new PerlinNoise(this.seed);
+
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.save();
+                // 回転のみキャンバス変換、スケールは各パターン内で処理
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate(this.params.rotation * Math.PI / 180);
+                ctx.translate(-w / 2, -h / 2);
+
+                ctx.strokeStyle = '#231f20';
+                ctx.fillStyle = '#231f20';
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                const patterns = [
+                    () => this.drawVerticalWaves(ctx, w, h),
+                    () => this.drawCommaScatter(ctx, w, h),
+                    () => this.drawHandDrawnCircle(ctx, w, h),
+                    () => this.drawRingScatter(ctx, w, h),
+                    () => this.drawStarburst(ctx, w, h),
+                    () => this.drawOverlappingRectangles(ctx, w, h),
+                    () => this.drawBirchDashes(ctx, w, h),
+                    () => this.drawScribble(ctx, w, h),
+                    () => this.drawHorizontalWaves(ctx, w, h)
+                ];
+
+                patterns[this.currentPattern]();
+                ctx.restore();
+            }
+
+            // Pattern 1: 縦波線
+            // 元絵の特徴：
+            // - 約13本の縦線が均等間隔で配置
+            // - 波の振幅は控えめ（隣の線と交差しない程度）
+            // - 波の周期は緩やか（1画面で約2〜3周期）
+            // - 線の太さは均一（約5px）
+            // - 滑らかで自然な曲線
+            // パラメータ：
+            // - 有機的な揺らぎ：線のうねり（振幅）を調整
+            drawVerticalWaves(ctx, w, h) {
+                const baseStroke = 5.0 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const densityFactor = this.params.density / 100;
+                const scaleFactor = this.params.scale / 100;
+                const numLines = Math.max(3, Math.round(13 * densityFactor));
+                const margin = w * 0.04;
+                const spacing = (w - margin * 2) / (numLines - 1);
+
+                for (let i = 0; i < numLines; i++) {
+                    const baseX = margin + i * spacing;
+                    const x = baseX;
+
+                    // 元絵に忠実：振幅は控えめ（spacing の約30-35%）
+                    // organic: うねりの強さを調整（0%=直線に近い、50%=元絵、100%=大きなうねり）
+                    const baseAmplitude = spacing * 0.32;
+                    const organicMultiplier = 0.3 + organic * 1.4; // 0.3〜1.7の範囲
+                    const amplitude = baseAmplitude * this.rng.range(0.9, 1.1) * scaleFactor * organicMultiplier;
+
+                    // 元絵に忠実：周期は緩やか（画面高さで約2.5周期）
+                    const baseFrequency = (Math.PI * 2 * 2.5) / h;
+                    const frequency = baseFrequency * this.rng.range(0.9, 1.1) / scaleFactor;
+
+                    const phase = this.rng.range(0, Math.PI * 2);
+
+                    // 線の太さは均一
+                    const strokeWidth = baseStroke * this.rng.range(0.95, 1.05);
+
+                    ctx.beginPath();
+                    ctx.lineWidth = strokeWidth;
+
+                    const startY = -20;
+                    const endY = h + 20;
+                    const segments = 150;
+
+                    for (let j = 0; j <= segments; j++) {
+                        const t = j / segments;
+                        const y = startY + t * (endY - startY);
+
+                        // メインの波形（滑らかなsin波）
+                        const waveX = Math.sin(y * frequency + phase) * amplitude;
+
+                        const px = x + waveX;
+
+                        if (j === 0) {
+                            ctx.moveTo(px, y);
+                        } else {
+                            ctx.lineTo(px, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            // Pattern 2: カンマ散布
+            // 元絵の特徴：
+            // - 細長いストローク（ほぼ直線〜ごく緩やかなカーブ）
+            // - 始点が太く、終点が細い（筆払い風）
+            // - 自然なペンの丸み
+            // パラメータ：
+            // - 有機的な揺らぎ：カーブの強さを調整
+            drawCommaScatter(ctx, w, h) {
+                const baseThickness = 11.5 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const scaleFactor = this.params.scale / 100;
+                const numElements = Math.max(15, Math.round(40 * (this.params.density / 100)));
+                const margin = w * 0.08;
+
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                for (let i = 0; i < numElements; i++) {
+                    const x = this.rng.range(margin, w - margin);
+                    const y = this.rng.range(margin, h - margin);
+                    const rotation = this.rng.range(0, Math.PI * 2);
+
+                    // 元絵に忠実：短めのストローク
+                    const length = this.rng.range(25, 50) * scaleFactor;
+
+                    // カーブの強さ：元絵はほぼ直線〜ごく緩やか
+                    // organic 0% = 直線、50% = 元絵程度、100% = やや強めのカーブ
+                    const bendAmount = 0.02 + organic * 0.08; // 0.02〜0.1（かなり控えめ）
+                    const bendDirection = this.rng.next() > 0.5 ? 1 : -1;
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(rotation);
+
+                    // 太さの範囲（始点が太く、終点が細い）
+                    const maxThickness = baseThickness * this.rng.range(0.9, 1.2) * scaleFactor;
+                    const minThickness = maxThickness * 0.15;
+
+                    // 複数のセグメントで描画し、太さを徐々に変える
+                    const numSegments = 10;
+
+                    for (let j = 0; j < numSegments; j++) {
+                        const t1 = j / numSegments;
+                        const t2 = (j + 1) / numSegments;
+
+                        // 各セグメントの位置（ごく緩やかなカーブ）
+                        const x1 = t1 * length;
+                        const y1 = Math.sin(t1 * Math.PI) * bendAmount * length * bendDirection;
+                        const x2 = t2 * length;
+                        const y2 = Math.sin(t2 * Math.PI) * bendAmount * length * bendDirection;
+
+                        // 太さ：始点→終点で滑らかに減少
+                        const taper = 1 - Math.pow((t1 + t2) / 2, 0.7);
+                        const thickness = minThickness + (maxThickness - minThickness) * taper;
+
+                        ctx.beginPath();
+                        ctx.lineWidth = thickness;
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+
+                    ctx.restore();
+                }
+            }
+
+            // Pattern 3: 手描き円 - 有機的揺らぎは円の形状全体に影響
+            drawHandDrawnCircle(ctx, w, h) {
+                const baseStroke = 3 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const scaleFactor = this.params.scale / 100;
+                const centerX = w / 2;
+                const centerY = h / 2;
+                const radius = Math.min(w, h) * 0.4 * scaleFactor;
+
+                ctx.beginPath();
+                ctx.lineWidth = baseStroke;
+
+                const numPoints = 200;
+                const startAngle = -Math.PI * 0.55 + this.rng.gaussian(0, 0.1 * organic);
+                const overshoot = this.rng.range(0.08, 0.15) * Math.PI;
+                const totalAngle = Math.PI * 2 + overshoot;
+
+                // 有機的揺らぎ：形状全体が歪む（低周波の滑らかな変形）
+                // 角度ごとの半径をスムーズに変化させる
+                const shapeDistortions = [];
+                const numDistortions = 8;
+                for (let i = 0; i < numDistortions; i++) {
+                    shapeDistortions.push({
+                        angle: (Math.PI * 2 * i) / numDistortions,
+                        amount: this.rng.gaussian(0, radius * 0.05 * organic)
+                    });
+                }
+
+                for (let i = 0; i <= numPoints; i++) {
+                    const t = i / numPoints;
+                    const angle = startAngle + t * totalAngle;
+
+                    let r = radius;
+
+                    // 基本的な楕円形の歪み（手描き感）
+                    const distortion1 = Math.sin(angle * 2 + 0.3) * radius * 0.03;
+                    const distortion2 = Math.cos(angle * 3 - 0.5) * radius * 0.02;
+                    r += distortion1 + distortion2;
+
+                    // 有機的揺らぎ：低周波のスムーズな形状変形（ギザギザではない）
+                    const noiseVal = this.perlin.noise(
+                        Math.cos(angle) * 1.5,
+                        Math.sin(angle) * 1.5
+                    );
+                    r += noiseVal * radius * 0.08 * organic;
+
+                    const px = centerX + Math.cos(angle) * r;
+                    const py = centerY + Math.sin(angle) * r;
+
+                    if (i === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+
+                ctx.stroke();
+            }
+
+            // Pattern 4: リング/ドーナツ散布 - 元絵に忠実：均等配置、大小サイズ違い
+            drawRingScatter(ctx, w, h) {
+                const baseStroke = 3.5 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const scaleFactor = this.params.scale / 100;
+                const densityFactor = this.params.density / 100;
+                const margin = w * 0.08;
+
+                // 元絵を観察：グリッド状にある程度均等に配置
+                const cols = Math.max(3, Math.round(5 * Math.sqrt(densityFactor)));
+                const rows = Math.max(3, Math.round(5 * Math.sqrt(densityFactor)));
+                const cellW = (w - margin * 2) / cols;
+                const cellH = (h - margin * 2) / rows;
+
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        // グリッドの中心位置
+                        const gridX = margin + (col + 0.5) * cellW;
+                        const gridY = margin + (row + 0.5) * cellH;
+
+                        // organic: 位置にばらつき（グリッドからのずれ）
+                        const x = gridX + this.rng.gaussian(0, cellW * 0.25 * organic);
+                        const y = gridY + this.rng.gaussian(0, cellH * 0.25 * organic);
+
+                        // 元絵：大小様々なサイズ（スケールで調整）
+                        const radius = this.rng.range(15, 35) * scaleFactor;
+                        const rotation = this.rng.range(0, Math.PI * 2);
+                        const gapAngle = this.rng.range(0.3, 0.8);
+                        const strokeWidth = baseStroke * this.rng.range(0.85, 1.15);
+
+                        ctx.save();
+                        ctx.translate(x, y);
+                        ctx.rotate(rotation);
+
+                        ctx.beginPath();
+                        ctx.lineWidth = strokeWidth;
+
+                        const startAngle = gapAngle / 2;
+                        const endAngle = Math.PI * 2 - gapAngle / 2;
+                        const numPoints = 40;
+
+                        for (let j = 0; j <= numPoints; j++) {
+                            const t = j / numPoints;
+                            const angle = startAngle + t * (endAngle - startAngle);
+
+                            let r = radius;
+
+                            // organic: 円の形状全体に揺らぎ（低周波、滑らか）
+                            const shapeWobble = this.perlin.noise(
+                                Math.cos(angle) * 1.5 + row * 3 + col,
+                                Math.sin(angle) * 1.5
+                            ) * radius * 0.12 * organic;
+                            r += shapeWobble;
+
+                            const px = Math.cos(angle) * r;
+                            const py = Math.sin(angle) * r;
+
+                            if (j === 0) {
+                                ctx.moveTo(px, py);
+                            } else {
+                                ctx.lineTo(px, py);
+                            }
+                        }
+
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // Pattern 5: スターバースト - 元絵に忠実：有機的なたてがみ形状、1セット（大+小）
+            drawStarburst(ctx, w, h) {
+                const baseStroke = 3.5 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const scaleFactor = this.params.scale / 100;
+
+                // 元絵を観察：中央に1つの大きなたてがみ、その中に小さなたてがみがネスト
+                const centerX = w / 2;
+                const centerY = h / 2;
+
+                // 大きいたてがみ
+                this.drawManeShape(ctx, centerX, centerY, 220 * scaleFactor, 16, baseStroke, organic);
+
+                // 中にネストする小さいたてがみ
+                this.drawManeShape(ctx, centerX + this.rng.gaussian(0, 10), centerY + this.rng.gaussian(0, 10),
+                    90 * scaleFactor, 12, baseStroke * 0.9, organic);
+            }
+
+            // たてがみ形状を描画するヘルパー
+            drawManeShape(ctx, cx, cy, size, numSpikes, strokeWidth, organic) {
+                ctx.lineWidth = strokeWidth * this.rng.range(0.9, 1.1);
+                ctx.beginPath();
+
+                // 各スパイクの角度を不規則に
+                const angles = [];
+                let totalAngle = 0;
+                for (let i = 0; i < numSpikes; i++) {
+                    const baseAngle = (Math.PI * 2) / numSpikes;
+                    const variation = baseAngle * this.rng.range(0.7, 1.3);
+                    angles.push(variation);
+                    totalAngle += variation;
+                }
+                const normalizer = (Math.PI * 2) / totalAngle;
+                for (let i = 0; i < angles.length; i++) {
+                    angles[i] *= normalizer;
+                }
+
+                let currentAngle = -Math.PI / 2 + this.rng.range(-0.2, 0.2);
+                let firstX, firstY;
+
+                for (let i = 0; i < numSpikes; i++) {
+                    // スパイクの外側（尖り）- 有機的な揺らぎ
+                    const outerR = size * this.rng.range(0.8, 1.2);
+                    // スパイクの内側（谷）
+                    const innerR = size * this.rng.range(0.3, 0.5);
+
+                    // 外側点（スパイクの先端）- 有機的揺らぎは角度のずれとして表現
+                    const angleWobble = this.rng.gaussian(0, 0.06 * organic);
+                    const outerAngle = currentAngle + angleWobble;
+                    const outerX = cx + Math.cos(outerAngle) * outerR;
+                    const outerY = cy + Math.sin(outerAngle) * outerR;
+
+                    // 内側点（谷）
+                    const innerAngleWobble = this.rng.gaussian(0, 0.08 * organic);
+                    const innerAngle = currentAngle + angles[i] * 0.5 + innerAngleWobble;
+                    const innerX = cx + Math.cos(innerAngle) * innerR;
+                    const innerY = cy + Math.sin(innerAngle) * innerR;
+
+                    if (i === 0) {
+                        firstX = outerX;
+                        firstY = outerY;
+                        ctx.moveTo(outerX, outerY);
+                    } else {
+                        ctx.lineTo(outerX, outerY);
+                    }
+
+                    // スパイク先端から谷へ滑らかに
+                    ctx.lineTo(innerX, innerY);
+
+                    currentAngle += angles[i];
+                }
+
+                ctx.lineTo(firstX, firstY);
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Pattern 6: 重なる四角形
+            // 元絵の特徴：
+            // - 四角形が画面全体に広がっている
+            // - 大きめのサイズ（正方形、横長、縦長が混在）
+            // - 線の太さは太め（約4-5px）
+            // - 手描き風の直線的な四角
+            // - 適度に重なり合っている
+            // パラメータ：
+            // - 有機的な揺らぎ：四角形の歪み具合を調整
+            drawOverlappingRectangles(ctx, w, h) {
+                const baseStroke = 4.5 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const densityFactor = this.params.density / 100;
+                const scaleFactor = this.params.scale / 100;
+                const margin = w * 0.08;
+
+                // 元絵に忠実：画面全体に分布
+                const numRects = Math.max(8, Math.round(18 * densityFactor));
+
+                for (let i = 0; i < numRects; i++) {
+                    // 画面全体にランダムに配置
+                    const x = this.rng.range(margin, w - margin);
+                    const y = this.rng.range(margin, h - margin);
+
+                    // 元絵に忠実：大きめのサイズ、正方形・横長・縦長が混在
+                    const shapeType = this.rng.next();
+                    let rectW, rectH;
+
+                    if (shapeType < 0.35) {
+                        // 正方形っぽい（大きめ）
+                        const size = this.rng.range(80, 140) * scaleFactor;
+                        rectW = size * this.rng.range(0.85, 1.15);
+                        rectH = size * this.rng.range(0.85, 1.15);
+                    } else if (shapeType < 0.65) {
+                        // 横長（大きめ）
+                        rectW = this.rng.range(120, 220) * scaleFactor;
+                        rectH = this.rng.range(50, 90) * scaleFactor;
+                    } else {
+                        // 縦長（大きめ）
+                        rectW = this.rng.range(50, 90) * scaleFactor;
+                        rectH = this.rng.range(120, 220) * scaleFactor;
+                    }
+
+                    // 回転：元絵はほぼ水平/垂直、わずかに傾いているものも
+                    const rotation = this.rng.gaussian(0, 0.06 + 0.04 * organic);
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(rotation);
+
+                    ctx.lineWidth = baseStroke * this.rng.range(0.9, 1.1);
+
+                    const halfW = rectW / 2;
+                    const halfH = rectH / 2;
+
+                    // 角の位置：手描き風のわずかな歪み
+                    const wobbleAmt = 3 + 5 * organic;
+                    const corners = [
+                        { x: -halfW + this.rng.gaussian(0, wobbleAmt), y: -halfH + this.rng.gaussian(0, wobbleAmt) },
+                        { x: halfW + this.rng.gaussian(0, wobbleAmt), y: -halfH + this.rng.gaussian(0, wobbleAmt) },
+                        { x: halfW + this.rng.gaussian(0, wobbleAmt), y: halfH + this.rng.gaussian(0, wobbleAmt) },
+                        { x: -halfW + this.rng.gaussian(0, wobbleAmt), y: halfH + this.rng.gaussian(0, wobbleAmt) }
+                    ];
+
+                    // 四角形を描画（シンプルな直線）
+                    ctx.beginPath();
+                    ctx.moveTo(corners[0].x, corners[0].y);
+                    ctx.lineTo(corners[1].x, corners[1].y);
+                    ctx.lineTo(corners[2].x, corners[2].y);
+                    ctx.lineTo(corners[3].x, corners[3].y);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+            }
+
+            // Pattern 7: 白樺ダッシュ - 元絵に忠実：太い水平ダッシュが散らばる
+            drawBirchDashes(ctx, w, h) {
+                const baseThickness = 8 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const scaleFactor = this.params.scale / 100;
+                const numDashes = Math.round(40 * (this.params.density / 100));
+                const margin = w * 0.05;
+
+                for (let i = 0; i < numDashes; i++) {
+                    const x = this.rng.range(margin, w - margin);
+                    const y = this.rng.range(margin, h - margin);
+
+                    // 元絵を観察：ほぼ水平、長さは様々
+                    const length = this.rng.range(40, 140) * scaleFactor;
+                    const thickness = baseThickness * this.rng.range(0.6, 1.2) * scaleFactor;
+
+                    // 元絵：ほぼ水平だが、少しだけ傾いている
+                    const angle = this.rng.gaussian(0, 0.1 * organic);
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+
+                    // 元絵：端が細く、中央が太い
+                    ctx.beginPath();
+
+                    const numPoints = 15;
+                    const upperPoints = [];
+                    const lowerPoints = [];
+
+                    for (let j = 0; j <= numPoints; j++) {
+                        const t = j / numPoints;
+                        const px = -length / 2 + t * length;
+
+                        // 端が細く中央が太い
+                        const taper = Math.sin(t * Math.PI);
+                        const currentThickness = thickness * (0.2 + 0.8 * taper);
+
+                        // 有機的揺らぎ：位置全体のずれ（線のギザギザではない）
+                        const yOffset = this.perlin.noise(t * 1.5 + i * 3, i * 0.5) * 3 * organic;
+
+                        upperPoints.push({ x: px, y: yOffset - currentThickness / 2 });
+                        lowerPoints.push({ x: px, y: yOffset + currentThickness / 2 });
+                    }
+
+                    ctx.moveTo(upperPoints[0].x, upperPoints[0].y);
+                    for (let j = 1; j < upperPoints.length; j++) {
+                        ctx.lineTo(upperPoints[j].x, upperPoints[j].y);
+                    }
+
+                    // 右端を丸く
+                    const lastU = upperPoints[upperPoints.length - 1];
+                    const lastL = lowerPoints[lowerPoints.length - 1];
+                    ctx.quadraticCurveTo(lastU.x + 3, (lastU.y + lastL.y) / 2, lastL.x, lastL.y);
+
+                    for (let j = lowerPoints.length - 2; j >= 0; j--) {
+                        ctx.lineTo(lowerPoints[j].x, lowerPoints[j].y);
+                    }
+
+                    // 左端を丸く
+                    const firstU = upperPoints[0];
+                    const firstL = lowerPoints[0];
+                    ctx.quadraticCurveTo(firstU.x - 3, (firstU.y + firstL.y) / 2, firstU.x, firstU.y);
+
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+            }
+
+            // Pattern 8: スクリブル - 元絵に忠実：一筆書きの連続した線
+            drawScribble(ctx, w, h) {
+                const baseStroke = 3.0 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const densityFactor = this.params.density / 100;
+                const scaleFactor = this.params.scale / 100;
+                const margin = w * 0.03;
+
+                // 一筆書き：単一の連続した線
+                ctx.beginPath();
+                ctx.lineWidth = baseStroke;
+
+                // 開始点：左上付近
+                let x = margin + this.rng.range(0, w * 0.1);
+                let y = margin + this.rng.range(0, h * 0.1);
+                let angle = this.rng.range(0, Math.PI * 2);
+
+                ctx.moveTo(x, y);
+
+                // 密度に応じて線の総長さを調整
+                const totalLength = this.rng.range(15000, 25000) * densityFactor * scaleFactor;
+                const stepSize = 3;
+                const steps = Math.round(totalLength / stepSize);
+
+                for (let j = 0; j < steps; j++) {
+                    // Perlinノイズで滑らかに角度を変化
+                    const noiseScale = 0.006;
+                    const noiseVal = this.perlin.octave(x * noiseScale, y * noiseScale, 3);
+
+                    // 角度の変化：滑らかな曲線を描く
+                    angle += noiseVal * 0.35 * (0.7 + organic * 0.5);
+
+                    // 有機的揺らぎ：全体的なパスの揺れ（細かいギザギザではない）
+                    angle += this.rng.gaussian(0, 0.06 * organic);
+
+                    x += Math.cos(angle) * stepSize;
+                    y += Math.sin(angle) * stepSize;
+
+                    // 境界で反射（キャンバス内に収める）
+                    if (x < margin) {
+                        x = margin;
+                        angle = Math.PI - angle + this.rng.gaussian(0, 0.2);
+                    }
+                    if (x > w - margin) {
+                        x = w - margin;
+                        angle = Math.PI - angle + this.rng.gaussian(0, 0.2);
+                    }
+                    if (y < margin) {
+                        y = margin;
+                        angle = -angle + this.rng.gaussian(0, 0.2);
+                    }
+                    if (y > h - margin) {
+                        y = h - margin;
+                        angle = -angle + this.rng.gaussian(0, 0.2);
+                    }
+
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.stroke();
+            }
+
+            // Pattern 9: 横波線（スキャロップ）- 元絵に忠実：浅いU字の連続
+            drawHorizontalWaves(ctx, w, h) {
+                const baseStroke = 4.0 * (this.params.strokeWidth / 100);
+                const organic = this.params.organic / 100;
+                const densityFactor = this.params.density / 100;
+                const scaleFactor = this.params.scale / 100;
+                const numLines = Math.max(3, Math.round(8 * densityFactor));
+                const margin = h * 0.08;
+                const spacing = (h - margin * 2) / Math.max(1, numLines - 1);
+
+                for (let i = 0; i < numLines; i++) {
+                    const baseY = margin + i * spacing;
+                    const strokeWidth = baseStroke * this.rng.range(0.9, 1.1);
+
+                    ctx.beginPath();
+                    ctx.lineWidth = strokeWidth;
+
+                    // 元絵を観察：1行あたり約5-7個の浅いアーチ
+                    const numArches = Math.round(this.rng.range(5, 7));
+                    const baseArchWidth = (w * 1.1) / numArches;
+
+                    let currentX = -w * 0.05; // 少し左から開始
+                    let prevEndY = baseY;
+                    let firstPoint = true;
+
+                    for (let arch = 0; arch <= numArches; arch++) {
+                        // 各U字：幅はある程度統一、深さは控えめ
+                        const archWidth = baseArchWidth * this.rng.range(0.85, 1.15) * scaleFactor;
+                        // 深さ：元絵に忠実 - 幅の約0.25〜0.4倍（浅めのU字）
+                        const archDepth = archWidth * this.rng.range(0.25, 0.4);
+
+                        // アーチの開始点のY位置
+                        const startYOffset = this.rng.gaussian(0, 4 * organic);
+                        const startY = (arch === 0) ? baseY + startYOffset : prevEndY;
+
+                        // アーチの終点のY位置（前の終点から自然につながる）
+                        const endYOffset = this.rng.gaussian(0, 5 * organic);
+                        const endY = baseY + endYOffset;
+
+                        // U字の底の位置：中央付近
+                        const bottomT = 0.5 + this.rng.range(-0.1, 0.1);
+
+                        const archStartX = currentX;
+                        const numSegments = 20;
+
+                        for (let seg = 0; seg <= numSegments; seg++) {
+                            const t = seg / numSegments;
+                            const localX = archStartX + t * archWidth;
+
+                            // シンプルなsin波形状（浅いU字）
+                            const archShape = Math.sin(t * Math.PI);
+
+                            // Y位置：開始点と終点を補間しながらU字を描く
+                            const progressY = startY + (endY - startY) * t;
+                            let localY = progressY + archShape * archDepth;
+
+                            // 手描きの揺らぎ：控えめ
+                            const wobble = this.perlin.noise(t * 1.5 + arch * 4 + i * 5, i * 0.2 + arch) * 4 * organic;
+                            localY += wobble;
+
+                            if (firstPoint) {
+                                ctx.moveTo(localX, localY);
+                                firstPoint = false;
+                            } else {
+                                ctx.lineTo(localX, localY);
+                            }
+                        }
+
+                        // 次のU字との接続点
+                        prevEndY = endY + this.rng.gaussian(0, 2 * organic);
+                        currentX += archWidth;
+
+                        if (currentX > w + 50) break;
+                    }
+
+                    ctx.stroke();
+                }
+            }
+
+            downloadSVG() {
+                try {
+                    const svgCanvas = new C2S(this.canvas.width, this.canvas.height);
+                    const originalCtx = this.ctx;
+                    this.ctx = svgCanvas;
+                    this.draw();
+                    this.ctx = originalCtx;
+
+                    const svgString = svgCanvas.getSerializedSvg(true);
+                    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tegaki-pattern-${this.currentPattern + 1}-${this.seed}.svg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.draw();
+                } catch (e) {
+                    console.error('SVG export error:', e);
+                    alert('SVGエクスポートに失敗しました。PNGでダウンロードしてください。');
+                }
+            }
+
+            downloadPNG() {
+                const a = document.createElement('a');
+                a.href = this.canvas.toDataURL('image/png');
+                a.download = `tegaki-pattern-${this.currentPattern + 1}-${this.seed}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new PatternDesigner();
+        });
+    </script>
+</body>
+</html>
