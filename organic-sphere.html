@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organic Sphere - Generative Art</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: #333;
+            letter-spacing: 0.1em;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+
+        #mainCanvas {
+            display: block;
+            background: white;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            width: 280px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .slider-container {
+            margin-bottom: 14px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .slider-label {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .slider-value {
+            font-size: 0.8rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #555;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            font-size: 0.85rem;
+            color: #555;
+            cursor: pointer;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #aaa;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 700px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .controls {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Organic Sphere</h1>
+        <p class="subtitle">Generative Art — ima Design Lab</p>
+    </header>
+
+    <div class="main-content">
+        <div class="canvas-container">
+            <canvas id="mainCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>形状パラメータ</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">曲線の数</span>
+                        <span class="slider-value" id="curveCountValue">150</span>
+                    </div>
+                    <input type="range" id="curveCount" min="40" max="300" value="150">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">花びらの数</span>
+                        <span class="slider-value" id="petalsValue">5</span>
+                    </div>
+                    <input type="range" id="petals" min="3" max="8" value="5">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">球体サイズ</span>
+                        <span class="slider-value" id="sphereSizeValue">180</span>
+                    </div>
+                    <input type="range" id="sphereSize" min="80" max="220" value="180">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">変形の強さ</span>
+                        <span class="slider-value" id="deformValue">0.7</span>
+                    </div>
+                    <input type="range" id="deform" min="0" max="1.2" step="0.05" value="0.7">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>アニメーション</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">回転速度</span>
+                        <span class="slider-value" id="rotationSpeedValue">0.3</span>
+                    </div>
+                    <input type="range" id="rotationSpeed" min="0" max="1" step="0.05" value="0.3">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">呼吸速度</span>
+                        <span class="slider-value" id="breathSpeedValue">0.5</span>
+                    </div>
+                    <input type="range" id="breathSpeed" min="0" max="1" step="0.05" value="0.5">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">呼吸の深さ</span>
+                        <span class="slider-value" id="breathDepthValue">0.3</span>
+                    </div>
+                    <input type="range" id="breathDepth" min="0" max="0.8" step="0.05" value="0.3">
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="isAnimating" checked>
+                    <label for="isAnimating">アニメーション再生</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>スタイル</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">線の太さ</span>
+                        <span class="slider-value" id="strokeWidthValue">0.3</span>
+                    </div>
+                    <input type="range" id="strokeWidth" min="0.1" max="2" step="0.1" value="0.3">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">透明度</span>
+                        <span class="slider-value" id="opacityValue">0.35</span>
+                    </div>
+                    <input type="range" id="opacity" min="0.05" max="0.8" step="0.05" value="0.35">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="reset">リセット</button>
+                <button class="btn btn-secondary" id="downloadSVG">SVGダウンロード</button>
+                <button class="btn btn-secondary" id="downloadPNG">PNGダウンロード</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © ima Design Lab｜松森木工所
+    </footer>
+
+    <script>
+        // ========================================
+        // グローバル変数
+        // ========================================
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let frameCount = 0;
+        let animationId = null;
+
+        // ========================================
+        // パラメータ取得
+        // ========================================
+        function getParams() {
+            return {
+                numLines: parseInt(document.getElementById('curveCount').value),
+                petals: parseInt(document.getElementById('petals').value),
+                sphereSize: parseInt(document.getElementById('sphereSize').value),
+                deform: parseFloat(document.getElementById('deform').value),
+                rotationSpeed: parseFloat(document.getElementById('rotationSpeed').value),
+                breathSpeed: parseFloat(document.getElementById('breathSpeed').value),
+                breathDepth: parseFloat(document.getElementById('breathDepth').value),
+                isAnimating: document.getElementById('isAnimating').checked,
+                strokeWidth: parseFloat(document.getElementById('strokeWidth').value),
+                opacity: parseFloat(document.getElementById('opacity').value)
+            };
+        }
+
+        // ========================================
+        // 形状定義（参考サイトに忠実）
+        // ========================================
+
+        // Form 1: 四つ葉クローバー型（参考サイトの初期形状）
+        function form1(u, v, t, size) {
+            const theta = u * Math.PI * 2;
+            const phi = v * Math.PI;
+
+            // 四つ葉の波形
+            const petalWave = 0.3 * Math.cos(theta * 4);
+            const r = size * (1 + petalWave * Math.sin(phi));
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            return { x, y, z };
+        }
+
+        // Form 2: 有機的なねじれ形状
+        function form2(u, v, t, size) {
+            const theta = u * Math.PI * 2;
+            const phi = v * Math.PI;
+
+            // ねじれ＋花びら
+            const twist = 0.4 * Math.sin(phi * 2 + theta * 3);
+            const petal = 0.25 * Math.cos(theta * 5) * Math.sin(phi * 2);
+            const r = size * (1 + twist + petal);
+
+            const x = r * Math.sin(phi) * Math.cos(theta + phi * 0.3);
+            const y = r * Math.sin(phi) * Math.sin(theta + phi * 0.3);
+            const z = r * Math.cos(phi) * (1 + 0.2 * Math.sin(theta * 3));
+
+            return { x, y, z };
+        }
+
+        // Form 3: 球根・タマネギ型
+        function form3(u, v, t, size) {
+            const theta = u * Math.PI * 2;
+            const phi = v * Math.PI;
+
+            // 球根の形状
+            const bulge = 1 + 0.3 * Math.sin(phi * 3);
+            const wave = 0.15 * Math.cos(theta * 6 + phi * 2);
+            const r = size * bulge * (1 + wave);
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi) * 1.2;
+
+            return { x, y, z };
+        }
+
+        // Form 4: 3つ葉の花形状
+        function form4(u, v, t, size) {
+            const theta = u * Math.PI * 2;
+            const phi = v * Math.PI;
+
+            const petal = 0.35 * Math.abs(Math.cos(theta * 1.5)) * Math.sin(phi);
+            const r = size * (1 + petal);
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            return { x, y, z };
+        }
+
+        const forms = [form1, form2, form3, form4];
+
+        // Cubic ease-in-out
+        function easeInOutCubic(t) {
+            return t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        // 形状間の補間
+        function lerpPoint(p1, p2, t) {
+            return {
+                x: p1.x + (p2.x - p1.x) * t,
+                y: p1.y + (p2.y - p1.y) * t,
+                z: p1.z + (p2.z - p1.z) * t
+            };
+        }
+
+        // 現在の形状を取得（モーフィング）
+        function getPoint(u, v, frame, size) {
+            const cycleFrames = 180; // 各形状を維持するフレーム数
+            const totalCycle = cycleFrames * forms.length;
+            const currentFrame = frame % totalCycle;
+
+            const formIndex = Math.floor(currentFrame / cycleFrames);
+            const nextFormIndex = (formIndex + 1) % forms.length;
+            const progress = (currentFrame % cycleFrames) / cycleFrames;
+
+            const easedProgress = easeInOutCubic(progress);
+
+            const p1 = forms[formIndex](u, v, frame, size);
+            const p2 = forms[nextFormIndex](u, v, frame, size);
+
+            return lerpPoint(p1, p2, easedProgress);
+        }
+
+        // 3D回転（X軸とY軸）
+        function rotatePoint(point, rotX, rotY) {
+            // Y軸回転
+            let x = point.x * Math.cos(rotY) - point.z * Math.sin(rotY);
+            let z = point.x * Math.sin(rotY) + point.z * Math.cos(rotY);
+            let y = point.y;
+
+            // X軸回転
+            const y2 = y * Math.cos(rotX) - z * Math.sin(rotX);
+            const z2 = y * Math.sin(rotX) + z * Math.cos(rotX);
+
+            return { x, y: y2, z: z2 };
+        }
+
+        // ========================================
+        // 描画
+        // ========================================
+        function draw() {
+            const params = getParams();
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // 背景クリア
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+
+            const numHorizontal = params.numLines;      // 水平線（緯線）の数
+            const numVertical = Math.floor(numHorizontal * 0.3); // 垂直線（経線）の数
+            const segments = 120;  // 各線の分割数
+
+            // 回転角度（ゆっくり回転）
+            const rotY = frameCount * 0.003 * params.rotationSpeed;
+            const rotX = 0.3; // 少し傾ける
+
+            const size = params.sphereSize;
+
+            // 水平方向の等高線（緯線）を描画
+            for (let i = 0; i < numHorizontal; i++) {
+                const v = i / (numHorizontal - 1);
+
+                ctx.beginPath();
+                let started = false;
+                let prevVisible = false;
+
+                for (let j = 0; j <= segments; j++) {
+                    const u = j / segments;
+
+                    // 現在の形状から点を取得
+                    const point = getPoint(u, v, frameCount, size);
+                    const rotated = rotatePoint(point, rotX, rotY);
+
+                    // バックフェイスカリング
+                    const visible = rotated.z > -size * 0.3;
+
+                    // 透視投影
+                    const scale = 1;
+                    const projX = centerX + rotated.x * scale;
+                    const projY = centerY + rotated.y * scale;
+
+                    // 奥行きに応じた透明度
+                    const depthRatio = (rotated.z + size) / (size * 2);
+                    const alpha = params.opacity * (0.2 + depthRatio * 0.8);
+
+                    if (visible) {
+                        if (!started || !prevVisible) {
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(40, 40, 40, ${alpha})`;
+                            ctx.lineWidth = params.strokeWidth * (0.5 + depthRatio * 0.5);
+                            ctx.moveTo(projX, projY);
+                            started = true;
+                        } else {
+                            ctx.lineTo(projX, projY);
+                        }
+                    }
+                    prevVisible = visible;
+                }
+                ctx.stroke();
+            }
+
+            // 垂直方向の等高線（経線）を描画
+            for (let i = 0; i < numVertical; i++) {
+                const u = i / numVertical;
+
+                ctx.beginPath();
+                let started = false;
+                let prevVisible = false;
+
+                for (let j = 0; j <= segments; j++) {
+                    const v = j / segments;
+
+                    const point = getPoint(u, v, frameCount, size);
+                    const rotated = rotatePoint(point, rotX, rotY);
+
+                    const visible = rotated.z > -size * 0.3;
+
+                    const scale = 1;
+                    const projX = centerX + rotated.x * scale;
+                    const projY = centerY + rotated.y * scale;
+
+                    const depthRatio = (rotated.z + size) / (size * 2);
+                    const alpha = params.opacity * 0.5 * (0.2 + depthRatio * 0.8);
+
+                    if (visible) {
+                        if (!started || !prevVisible) {
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(40, 40, 40, ${alpha})`;
+                            ctx.lineWidth = params.strokeWidth * 0.7 * (0.5 + depthRatio * 0.5);
+                            ctx.moveTo(projX, projY);
+                            started = true;
+                        } else {
+                            ctx.lineTo(projX, projY);
+                        }
+                    }
+                    prevVisible = visible;
+                }
+                ctx.stroke();
+            }
+        }
+
+        // ========================================
+        // アニメーションループ
+        // ========================================
+        function animate() {
+            const params = getParams();
+
+            if (params.isAnimating) {
+                frameCount++;
+            }
+
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ========================================
+        // イベントリスナー
+        // ========================================
+        function setupEventListeners() {
+            const sliders = [
+                'curveCount', 'petals', 'sphereSize', 'deform',
+                'rotationSpeed', 'breathSpeed', 'breathDepth',
+                'strokeWidth', 'opacity'
+            ];
+
+            sliders.forEach(id => {
+                const slider = document.getElementById(id);
+                const valueSpan = document.getElementById(id + 'Value');
+
+                slider.addEventListener('input', () => {
+                    valueSpan.textContent = slider.value;
+                });
+            });
+
+            document.getElementById('reset').addEventListener('click', () => {
+                document.getElementById('curveCount').value = 150;
+                document.getElementById('petals').value = 5;
+                document.getElementById('sphereSize').value = 180;
+                document.getElementById('deform').value = 0.7;
+                document.getElementById('rotationSpeed').value = 0.3;
+                document.getElementById('breathSpeed').value = 0.5;
+                document.getElementById('breathDepth').value = 0.3;
+                document.getElementById('strokeWidth').value = 0.3;
+                document.getElementById('opacity').value = 0.35;
+                document.getElementById('isAnimating').checked = true;
+
+                sliders.forEach(id => {
+                    const slider = document.getElementById(id);
+                    document.getElementById(id + 'Value').textContent = slider.value;
+                });
+
+                frameCount = 0;
+            });
+
+            document.getElementById('downloadPNG').addEventListener('click', downloadPNG);
+            document.getElementById('downloadSVG').addEventListener('click', downloadSVG);
+        }
+
+        // ========================================
+        // ダウンロード機能
+        // ========================================
+        function downloadPNG() {
+            const link = document.createElement('a');
+            link.download = `organic-sphere-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadSVG() {
+            const params = getParams();
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const numHorizontal = params.numLines;
+            const segments = 120;
+            const rotY = frameCount * 0.003 * params.rotationSpeed;
+            const rotX = 0.3;
+            const size = params.sphereSize;
+
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+            svg += `<rect width="100%" height="100%" fill="white"/>`;
+
+            // 水平方向の等高線（緯線）
+            for (let i = 0; i < numHorizontal; i++) {
+                const v = i / (numHorizontal - 1);
+                let pathD = '';
+                let hasStarted = false;
+
+                for (let j = 0; j <= segments; j++) {
+                    const u = j / segments;
+                    const point = getPoint(u, v, frameCount, size);
+                    const rotated = rotatePoint(point, rotX, rotY);
+
+                    const visible = rotated.z > -size * 0.3;
+                    const projX = centerX + rotated.x;
+                    const projY = centerY + rotated.y;
+
+                    if (visible) {
+                        pathD += hasStarted ? ` L${projX.toFixed(1)},${projY.toFixed(1)}` : `M${projX.toFixed(1)},${projY.toFixed(1)}`;
+                        hasStarted = true;
+                    } else {
+                        hasStarted = false;
+                    }
+                }
+
+                if (pathD) {
+                    const depthFactor = 0.5;
+                    const opacity = params.opacity * (0.2 + depthFactor * 0.8);
+                    svg += `<path d="${pathD}" fill="none" stroke="rgba(40,40,40,${opacity})" stroke-width="${params.strokeWidth}"/>`;
+                }
+            }
+
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `organic-sphere-${Date.now()}.svg`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ========================================
+        // 初期化
+        // ========================================
+        function init() {
+            setupEventListeners();
+            animate();
+        }
+
+        init();
+    </script>
+</body>
+</html>

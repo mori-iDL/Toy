@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tessellation Patterns - Generative Art</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: #333;
+            letter-spacing: 0.1em;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            background: #F0EEE6;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+
+        #mainCanvas {
+            display: block;
+            background: #F0EEE6;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            width: 280px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .slider-container {
+            margin-bottom: 14px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .slider-label {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .slider-value {
+            font-size: 0.8rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #555;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            font-size: 0.85rem;
+            color: #555;
+            cursor: pointer;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #aaa;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 700px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .controls {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Tessellation Patterns</h1>
+        <p class="subtitle">Generative Art — ima Design Lab</p>
+    </header>
+
+    <div class="main-content">
+        <div class="canvas-container">
+            <canvas id="mainCanvas" width="550" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>形状パラメータ</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">タイルスケール</span>
+                        <span class="slider-value" id="scaleValue">45</span>
+                    </div>
+                    <input type="range" id="scale" min="25" max="80" value="45">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">グリッドサイズ</span>
+                        <span class="slider-value" id="gridSizeValue">7</span>
+                    </div>
+                    <input type="range" id="gridSize" min="3" max="12" value="7">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">フィールドスケール</span>
+                        <span class="slider-value" id="fieldScaleValue">1.8</span>
+                    </div>
+                    <input type="range" id="fieldScale" min="0.8" max="3.0" step="0.1" value="1.8">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">波打ち強度</span>
+                        <span class="slider-value" id="waveAmplitudeValue">0.05</span>
+                    </div>
+                    <input type="range" id="waveAmplitude" min="0" max="0.3" step="0.01" value="0.05">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>アニメーション</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">回転速度</span>
+                        <span class="slider-value" id="rotationSpeedValue">0.2</span>
+                    </div>
+                    <input type="range" id="rotationSpeed" min="0" max="0.5" step="0.01" value="0.2">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">変形速度</span>
+                        <span class="slider-value" id="morphSpeedValue">0.01</span>
+                    </div>
+                    <input type="range" id="morphSpeed" min="0" max="0.03" step="0.001" value="0.01">
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="showLayers" checked>
+                    <label for="showLayers">複数レイヤー表示</label>
+                </div>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="isAnimating" checked>
+                    <label for="isAnimating">アニメーション再生</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>スタイル</h3>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">線の太さ</span>
+                        <span class="slider-value" id="strokeWidthValue">0.6</span>
+                    </div>
+                    <input type="range" id="strokeWidth" min="0.2" max="2" step="0.1" value="0.6">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span class="slider-label">透明度</span>
+                        <span class="slider-value" id="opacityValue">0.4</span>
+                    </div>
+                    <input type="range" id="opacity" min="0.1" max="0.8" step="0.05" value="0.4">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" id="reset">リセット</button>
+                <button class="btn btn-secondary" id="downloadSVG">SVGダウンロード</button>
+                <button class="btn btn-secondary" id="downloadPNG">PNGダウンロード</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © ima Design Lab｜松森木工所
+    </footer>
+
+    <script>
+        // ========================================
+        // グローバル変数
+        // ========================================
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        let time = 0;
+        let animationId = null;
+
+        // ========================================
+        // パラメータ取得
+        // ========================================
+        function getParams() {
+            return {
+                scale: parseInt(document.getElementById('scale').value),
+                gridSize: parseInt(document.getElementById('gridSize').value),
+                fieldScale: parseFloat(document.getElementById('fieldScale').value),
+                waveAmplitude: parseFloat(document.getElementById('waveAmplitude').value),
+                rotationSpeed: parseFloat(document.getElementById('rotationSpeed').value),
+                morphSpeed: parseFloat(document.getElementById('morphSpeed').value),
+                showLayers: document.getElementById('showLayers').checked,
+                isAnimating: document.getElementById('isAnimating').checked,
+                strokeWidth: parseFloat(document.getElementById('strokeWidth').value),
+                opacity: parseFloat(document.getElementById('opacity').value)
+            };
+        }
+
+        // ========================================
+        // 六角形タイルを描画
+        // ========================================
+        function drawTile(cx, cy, size, rotation, phase, morph, params, edgeFade = 1) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(rotation);
+
+            const points = 6;
+            const waveAmp = params.waveAmplitude;
+            const alpha = params.opacity * edgeFade;
+
+            // 外側の六角形を描画
+            ctx.beginPath();
+            for (let i = 0; i <= points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+                const r = size * (1 + Math.sin(phase + i * 1.5) * waveAmp);
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.strokeStyle = `rgba(51, 51, 51, ${alpha})`;
+            ctx.lineWidth = params.strokeWidth;
+            ctx.stroke();
+
+            // 内部構造を描画（1つおきの頂点から中心方向に線）
+            for (let i = 0; i < points; i += 2) {
+                const angle1 = (i / points) * Math.PI * 2;
+                const angle2 = ((i + 2) / points) * Math.PI * 2;
+                const r1 = size * (1 + Math.sin(phase + i * 1.5) * waveAmp);
+                const r2 = size * (1 + Math.sin(phase + (i + 2) * 1.5) * waveAmp);
+
+                // 外側の点
+                const x1 = Math.cos(angle1) * r1;
+                const y1 = Math.sin(angle1) * r1;
+                const x2 = Math.cos(angle2) * r2;
+                const y2 = Math.sin(angle2) * r2;
+
+                // 内側の点（morph で変形）
+                const midAngle = (angle1 + angle2) / 2;
+                const innerR = size * 0.5 * (1 + morph * 0.5);
+                const xi = Math.cos(midAngle) * innerR;
+                const yi = Math.sin(midAngle) * innerR;
+
+                // 接続線を描画
+                ctx.strokeStyle = `rgba(51, 51, 51, ${alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(xi, yi);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(xi, yi);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ========================================
+        // 六角形グリッド（テッセレーションフィールド）
+        // ========================================
+        function createTessellationField(offsetX, offsetY, fieldScale, timeOffset, params) {
+            const gridSize = params.gridSize;
+            // スペーシングをさらに詰める（タイルを密集させる）
+            const spacing = params.scale * fieldScale * 0.5;
+            const maxDist = params.scale * fieldScale * 2.5;
+
+            for (let row = -gridSize; row <= gridSize; row++) {
+                const rowOffset = (row % 2) * spacing * 0.5;
+                for (let col = -gridSize; col <= gridSize; col++) {
+                    const x = (col * spacing * 0.866) + rowOffset + offsetX;
+                    const y = row * spacing * 0.75 + offsetY;
+                    const dist = Math.sqrt(x * x + y * y);
+
+                    // 範囲外はスキップ
+                    if (dist > maxDist) continue;
+
+                    // タイルのプロパティを計算
+                    const angle = Math.atan2(y - offsetY, x - offsetX);
+                    const phase = (time + timeOffset) * 2.5 + dist * 0.012;
+                    const morph = Math.sin(phase + angle * 1.5) * 0.5 + 0.5;
+
+                    // タイルのサイズ（均一、やや小さめ）
+                    const tileSize = params.scale * fieldScale * 0.32;
+
+                    // 外周に近づくほど透明度を下げる（フェードアウト効果）
+                    const edgeFade = dist > maxDist * 0.65
+                        ? 1 - (dist - maxDist * 0.65) / (maxDist * 0.35)
+                        : 1;
+
+                    // タイルを描画（透明度を渡す）
+                    drawTile(
+                        width / 2 + x,
+                        height / 2 + y,
+                        tileSize,
+                        angle + (time + timeOffset) * params.rotationSpeed,
+                        phase,
+                        morph,
+                        params,
+                        edgeFade
+                    );
+                }
+            }
+        }
+
+        // ========================================
+        // 描画
+        // ========================================
+        function draw() {
+            const params = getParams();
+
+            // 背景クリア
+            ctx.fillStyle = '#F0EEE6';
+            ctx.fillRect(0, 0, width, height);
+
+            // メインのテッセレーションフィールド
+            createTessellationField(0, 0, params.fieldScale, 0, params);
+
+            if (params.showLayers) {
+                // 第2フィールド（30度回転）- 同じ位置、回転のみ
+                ctx.save();
+                ctx.translate(width / 2, height / 2);
+                ctx.rotate(Math.PI / 6);
+                ctx.translate(-width / 2, -height / 2);
+                createTessellationField(0, 0, params.fieldScale * 0.85, time * 0.08 + Math.PI / 3, params);
+                ctx.restore();
+
+                // 第3フィールド（-30度回転）- 同じ位置、回転のみ
+                ctx.save();
+                ctx.translate(width / 2, height / 2);
+                ctx.rotate(-Math.PI / 6);
+                ctx.translate(-width / 2, -height / 2);
+                createTessellationField(0, 0, params.fieldScale * 0.85, time * 0.08 - Math.PI / 3, params);
+                ctx.restore();
+            }
+        }
+
+        // ========================================
+        // アニメーションループ
+        // ========================================
+        function animate() {
+            const params = getParams();
+
+            if (params.isAnimating) {
+                time += params.morphSpeed;
+            }
+
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ========================================
+        // イベントリスナー
+        // ========================================
+        function setupEventListeners() {
+            const sliders = [
+                'scale', 'gridSize', 'fieldScale', 'waveAmplitude',
+                'rotationSpeed', 'morphSpeed', 'strokeWidth', 'opacity'
+            ];
+
+            sliders.forEach(id => {
+                const slider = document.getElementById(id);
+                const valueSpan = document.getElementById(id + 'Value');
+
+                slider.addEventListener('input', () => {
+                    valueSpan.textContent = slider.value;
+                });
+            });
+
+            document.getElementById('reset').addEventListener('click', () => {
+                document.getElementById('scale').value = 45;
+                document.getElementById('gridSize').value = 7;
+                document.getElementById('fieldScale').value = 1.8;
+                document.getElementById('waveAmplitude').value = 0.05;
+                document.getElementById('rotationSpeed').value = 0.2;
+                document.getElementById('morphSpeed').value = 0.01;
+                document.getElementById('strokeWidth').value = 0.6;
+                document.getElementById('opacity').value = 0.4;
+                document.getElementById('showLayers').checked = true;
+                document.getElementById('isAnimating').checked = true;
+
+                sliders.forEach(id => {
+                    const slider = document.getElementById(id);
+                    document.getElementById(id + 'Value').textContent = slider.value;
+                });
+
+                time = 0;
+            });
+
+            document.getElementById('downloadPNG').addEventListener('click', downloadPNG);
+            document.getElementById('downloadSVG').addEventListener('click', downloadSVG);
+        }
+
+        // ========================================
+        // ダウンロード機能
+        // ========================================
+        function downloadPNG() {
+            const link = document.createElement('a');
+            link.download = `tessellation-patterns-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadSVG() {
+            const params = getParams();
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+            svg += `<rect width="100%" height="100%" fill="#F0EEE6"/>`;
+
+            // 簡易的なSVG出力（メインフィールドのみ）
+            const gridSize = params.gridSize;
+            const spacing = params.scale * params.fieldScale * 0.8;
+
+            for (let row = -gridSize; row <= gridSize; row++) {
+                const rowOffset = (row % 2) * spacing * 0.5;
+                for (let col = -gridSize; col <= gridSize; col++) {
+                    const x = (col * spacing * 0.866) + rowOffset;
+                    const y = row * spacing * 0.75;
+                    const dist = Math.sqrt(x * x + y * y);
+
+                    if (dist > params.scale * params.fieldScale * 2.5) continue;
+
+                    const tileSize = params.scale * params.fieldScale * 0.4 * (1 - dist / (params.scale * params.fieldScale * 3) * 0.3);
+                    const cx = width / 2 + x;
+                    const cy = height / 2 + y;
+
+                    // 六角形
+                    let points = '';
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        const px = cx + Math.cos(angle) * tileSize;
+                        const py = cy + Math.sin(angle) * tileSize;
+                        points += `${px.toFixed(1)},${py.toFixed(1)} `;
+                    }
+                    svg += `<polygon points="${points.trim()}" fill="none" stroke="rgba(51,51,51,${params.opacity})" stroke-width="${params.strokeWidth}"/>`;
+                }
+            }
+
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `tessellation-patterns-${Date.now()}.svg`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ========================================
+        // 初期化
+        // ========================================
+        function init() {
+            setupEventListeners();
+            animate();
+        }
+
+        init();
+    </script>
+</body>
+</html>
